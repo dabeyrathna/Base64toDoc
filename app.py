@@ -10,20 +10,15 @@ def decode():
     b64 = data.get('base64String')
 
     try:
-        # Decode the Base64 string
         bytes_data = b64decode(b64, validate=True)
-
         if encoding_type == 'pdf':
-            # Validate PDF signature
             if bytes_data[0:4] != b'%PDF':
                 return jsonify({'error': 'Invalid PDF file'}), 400
-            # Return the decoded PDF content as Base64
             return jsonify({
                 'decodedContent': b64encode(bytes_data).decode('utf-8'),
                 'error': None
             })
         elif encoding_type in ['html', 'xml']:
-            # Validate HTML/XML by decoding to string
             decoded_text = bytes_data.decode('utf-8', errors='replace')
             return jsonify({
                 'decodedContent': decoded_text,
