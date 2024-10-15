@@ -1,13 +1,23 @@
 from flask import Flask, request, jsonify, render_template_string
 from base64 import b64decode, b64encode
+import re
 
 app = Flask(__name__)
+
+def find_invalid_base64_chars(b64):
+    # Identify non-Base64 characters using regex
+    invalid_chars = re.findall(r'[^A-Za-z0-9+/=]', b64)
+    return invalid_chars
 
 @app.route('/decode', methods=['POST'])
 def decode():
     data = request.json
     encoding_type = data.get('encodingType')
-    b64 = data.get('base64String')
+    b64 = data.get('base64String').strip()
+
+    invalid_chars = find_invalid_base64_chars(b64)
+    if invalid_chars:
+        return jsonify({'error': 'Invalid Base64 characters found', 'invalidChars': invalid_chars}), 400
 
     try:
         bytes_data = b64decode(b64, validate=True)
@@ -29,12 +39,15 @@ def decode():
 
 @app.route('/')
 def index():
-    return render_template_string('''
+    return render_template_string('''<!DOCTYPE html>
     <html>
         <head>
             <style>
                 #base64String {
                     width: 100%;
+                }
+                .highlight {
+                    background-color: yellow;
                 }
             </style>
         </head>
@@ -98,6 +111,14 @@ def index():
                         }
                     } else {
                         resultElement.textContent = data.error;
+                        if (data.invalidChars) {
+                            const textarea = document.getElementById('base64String');
+                            let highlightedText = base64String;
+                            data.invalidChars.forEach(char => {
+                                highlightedText = highlightedText.replace(new RegExp(char, 'g'), `<span class="highlight">${char}</span>`);
+                            });
+                            textarea.innerHTML = highlightedText; // Using innerHTML instead of value to show highlights
+                        }
                         pdfViewer.style.display = 'none';
                         htmlViewer.style.display = 'none';
                         xmlViewer.style.display = 'none';
